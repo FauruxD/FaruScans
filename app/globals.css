@@ -106,43 +106,28 @@ body {
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-.starfield {
-  background-image:
-    radial-gradient(circle, rgba(0, 0, 0, 0.28) 3px, transparent 3px),
-    radial-gradient(circle, rgba(0, 0, 0, 0.18) 3px, transparent 3px);
-  background-position:
-    0 0,
-    40px 60px;
-  background-size:
-    80px 80px,
-    140px 140px;
-  animation: starfield-drift 80s linear infinite;
+.star-dot {
+  animation-name: star-twinkle, star-float;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: alternate, alternate;
 }
 
-.dark .starfield {
-  background-image:
-    radial-gradient(circle, rgba(255, 255, 255, 0.38) 3px, transparent 3px),
-    radial-gradient(circle, rgba(255, 255, 255, 0.22) 3px, transparent 3px);
+@keyframes star-twinkle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 0.9;
+  }
 }
 
-.starfield-large {
-  opacity: 0.55;
-  background-size:
-    160px 160px,
-    260px 260px;
-  animation-duration: 120s;
-}
-
-.starfield-small {
-  opacity: 0.8;
-}
-
-@keyframes starfield-drift {
+@keyframes star-float {
   from {
     transform: translate3d(0, 0, 0);
   }
   to {
-    transform: translate3d(-120px, 180px, 0);
+    transform: translate3d(12px, -18px, 0);
   }
 }
 
