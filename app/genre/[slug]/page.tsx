@@ -1,0 +1,48 @@
+import type { Metadata } from "next";
+import ComicGrid from "@/components/ComicGrid";
+import ErrorMessage from "@/components/ErrorMessage";
+import Pagination from "@/components/Pagination";
+import SectionHeader from "@/components/SectionHeader";
+import { fetchGenreComics } from "@/lib/api";
+import { normalizeComicItem, safeSegment } from "@/lib/utils";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  return { title: `Genre ${slug}` };
+}
+
+export default async function GenreDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug: rawSlug } = await params;
+  const slug = safeSegment(rawSlug);
+  const result = await fetchGenreComics(slug, 1);
+  const comics = (result.data.data || [])
+    .map(normalizeComicItem)
+    .filter((comic) => comic.slug);
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <SectionHeader
+        title={`Genre ${slug.replaceAll("-", " ")}`}
+        description={`${comics.length} komik di halaman 1`}
+      />
+      <ErrorMessage message={result.error} />
+      <div className="mt-6">
+        <ComicGrid comics={comics} emptyTitle="Genre ini kosong" />
+      </div>
+      <Pagination
+        currentPage={1}
+        basePath={`/genre/${slug}`}
+        queryMode={false}
+        hasNextPage={Boolean(result.data.hasNextPage)}
+      />
+    </div>
+  );
+}
