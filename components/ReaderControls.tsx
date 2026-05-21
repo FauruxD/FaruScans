@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId } from "react";
-import { safeSegment } from "@/lib/utils";
+import { useEffect, useRef, useState } from "react";
+import { cn, safeSegment } from "@/lib/utils";
 import type { ReaderControlChapter } from "@/types/comic";
 
 export default function ReaderControls({
@@ -23,7 +23,8 @@ export default function ReaderControls({
   detailHref: string;
 }) {
   const router = useRouter();
-  const selectId = useId();
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const normalizedSlug = safeSegment(slug);
   const normalizedCurrent = safeSegment(currentChapter);
   const options = chapters.length
@@ -35,9 +36,33 @@ export default function ReaderControls({
           href: `/baca/${normalizedSlug}/${normalizedCurrent}`,
         },
       ];
+  const currentLabel =
+    options.find((item) => item.chapterSlug === normalizedCurrent)?.title ||
+    `Chapter ${normalizedCurrent}`;
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function onEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, []);
 
   function changeChapter(value: string) {
     const next = safeSegment(value);
+    setOpen(false);
     if (!next || next === normalizedCurrent) return;
     router.push(`/baca/${normalizedSlug}/${next}`);
   }
@@ -55,27 +80,44 @@ export default function ReaderControls({
         Prev
       </ControlLink>
 
-      <label className="sr-only" htmlFor={selectId}>
-        Pilih chapter
-      </label>
-      <select
-        id={selectId}
-        value={normalizedCurrent}
-        onChange={(event) => changeChapter(event.target.value)}
-        className="min-w-[180px] rounded-xl border border-cyan-300 bg-cyan-400 px-4 py-3 text-center text-sm font-bold text-zinc-950 outline-none transition focus:ring-2 focus:ring-cyan-300/40 dark:border-emerald-400 dark:bg-emerald-500 dark:text-white sm:min-w-[240px]"
-      >
-        {options.map((item) => (
-          <option
-            key={item.chapterSlug}
-            value={item.chapterSlug}
-            className="bg-white text-zinc-950 dark:bg-zinc-900 dark:text-white"
-          >
-            {item.chapterSlug === normalizedCurrent
-              ? `${item.title} (aktif)`
-              : item.title}
-          </option>
-        ))}
-      </select>
+      <div ref={wrapperRef} className="relative w-full sm:w-[240px]">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          className="flex h-12 w-full min-w-[220px] items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white/80 px-5 py-3 text-sm font-bold text-zinc-950 transition hover:border-cyan-400 hover:bg-zinc-100 dark:border-white/10 dark:bg-zinc-900 dark:text-white dark:hover:bg-white/5"
+        >
+          <span className="truncate">{currentLabel}</span>
+          <ChevronDown
+            className={cn("size-4 shrink-0 transition", open && "rotate-180")}
+            aria-hidden="true"
+          />
+        </button>
+
+        {open ? (
+          <div className="absolute left-0 top-full z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-white/10 dark:bg-zinc-900">
+            {options.map((item) => {
+              const active = item.chapterSlug === normalizedCurrent;
+
+              return (
+                <button
+                  key={item.chapterSlug}
+                  type="button"
+                  onClick={() => changeChapter(item.chapterSlug)}
+                  className={cn(
+                    "block w-full border-b px-4 py-3 text-left text-sm transition last:border-b-0",
+                    active
+                      ? "border-cyan-400 bg-cyan-400 font-bold text-zinc-950"
+                      : "border-zinc-100 text-zinc-800 hover:bg-zinc-100 dark:border-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
+                  )}
+                >
+                  {item.title}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
 
       <ControlLink
         href={nextChapter ? `/baca/${normalizedSlug}/${safeSegment(nextChapter)}` : "#"}
