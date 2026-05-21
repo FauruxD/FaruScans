@@ -20,7 +20,7 @@ export default function ReaderScrollButtons() {
         type="button"
         onClick={scrollToTop}
         aria-label="Scroll ke atas"
-        className="flex size-12 items-center justify-center rounded-full bg-cyan-400 text-zinc-950 shadow-lg shadow-cyan-500/20 transition hover:scale-105 hover:bg-cyan-300"
+        className="flex size-12 items-center justify-center rounded-full bg-cyan-400 text-white shadow-lg shadow-cyan-500/20 transition hover:scale-105 hover:bg-cyan-300"
       >
         <ChevronUp className="size-6" aria-hidden="true" />
       </button>
@@ -28,7 +28,7 @@ export default function ReaderScrollButtons() {
         type="button"
         onClick={scrollToBottom}
         aria-label="Scroll ke bawah"
-        className="flex size-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 transition hover:scale-105 hover:bg-emerald-400"
+        className="flex size-12 items-center justify-center rounded-full bg-cyan-400 text-white shadow-lg shadow-cyan-500/20 transition hover:scale-105 hover:bg-cyan-300"
       >
         <ChevronDown className="size-6" aria-hidden="true" />
       </button>
