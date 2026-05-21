@@ -6,8 +6,13 @@ const READ_CHAPTERS_EVENT = "faruscan_read_chapters_changed";
 export type ReadChapter = {
   comicSlug: string;
   chapterSlug: string;
+  title?: string;
+  comicTitle?: string;
+  cover?: string;
   readAt: number;
 };
+
+export type ReadHistoryItem = ReadChapter;
 
 export function getReadChapters(): string[] {
   return getReadChapterItems().map((item) =>
@@ -16,22 +21,39 @@ export function getReadChapters(): string[] {
 }
 
 export function getReadChapterItems(): ReadChapter[] {
-  if (typeof window === "undefined") return [];
+  return parseReadHistorySnapshot(getReadHistorySnapshot(), { sort: false });
+}
 
+export function getReadHistorySnapshot() {
+  if (typeof window === "undefined") return "[]";
+  return window.localStorage.getItem(READ_CHAPTERS_KEY) || "[]";
+}
+
+export function parseReadHistorySnapshot(
+  snapshot: string,
+  options: { sort?: boolean } = {}
+): ReadHistoryItem[] {
   try {
-    const value = window.localStorage.getItem(READ_CHAPTERS_KEY);
-    const parsed = value ? JSON.parse(value) : [];
+    const parsed = snapshot ? JSON.parse(snapshot) : [];
     if (!Array.isArray(parsed)) return [];
 
-    return parsed
+    const history = parsed
       .map(normalizeReadChapter)
-      .filter((item): item is ReadChapter => Boolean(item));
+      .filter((item): item is ReadHistoryItem => Boolean(item));
+
+    return options.sort === false
+      ? history
+      : history.sort((a, b) => b.readAt - a.readAt);
   } catch {
     return [];
   }
 }
 
-export function getReadChaptersByComic(slug: string): ReadChapter[] {
+export function getAllReadHistory(): ReadHistoryItem[] {
+  return getReadChapterItems().sort((a, b) => b.readAt - a.readAt);
+}
+
+export function getReadChaptersByComic(slug: string): ReadHistoryItem[] {
   const comicSlug = safeSegment(slug);
   if (!comicSlug) return [];
 
@@ -40,17 +62,27 @@ export function getReadChaptersByComic(slug: string): ReadChapter[] {
     .sort((a, b) => b.readAt - a.readAt);
 }
 
-export function markChapterAsRead(slug: string, chapter: string) {
+export function markChapterAsRead(
+  slugOrItem: string | Omit<ReadHistoryItem, "readAt"> & { readAt?: number },
+  chapter?: string
+) {
   if (typeof window === "undefined") return;
 
-  const comicSlug = safeSegment(slug);
-  const chapterSlug = safeSegment(chapter);
+  const input =
+    typeof slugOrItem === "string"
+      ? { comicSlug: slugOrItem, chapterSlug: chapter || "" }
+      : slugOrItem;
+  const comicSlug = safeSegment(input.comicSlug);
+  const chapterSlug = safeSegment(input.chapterSlug);
   if (!comicSlug || !chapterSlug) return;
 
-  const nextChapter: ReadChapter = {
+  const nextChapter: ReadHistoryItem = {
     comicSlug,
     chapterSlug,
-    readAt: Date.now(),
+    title: input.title,
+    comicTitle: input.comicTitle,
+    cover: input.cover,
+    readAt: input.readAt || Date.now(),
   };
   const chapters = getReadChapterItems().filter(
     (item) => !(item.comicSlug === comicSlug && item.chapterSlug === chapterSlug)
@@ -74,6 +106,25 @@ export function resetReadChaptersForComic(slug: string) {
     (item) => item.comicSlug !== comicSlug
   );
   saveReadChapters(filtered);
+}
+
+export function removeReadHistoryItem(comicSlug: string, chapterSlug: string) {
+  if (typeof window === "undefined") return;
+
+  const normalizedComic = safeSegment(comicSlug);
+  const normalizedChapter = safeSegment(chapterSlug);
+  if (!normalizedComic || !normalizedChapter) return;
+
+  const filtered = getReadChapterItems().filter(
+    (item) =>
+      !(item.comicSlug === normalizedComic && item.chapterSlug === normalizedChapter)
+  );
+  saveReadChapters(filtered);
+}
+
+export function clearAllReadHistory() {
+  if (typeof window === "undefined") return;
+  saveReadChapters([]);
 }
 
 export function chapterKey(slug: string, chapter: string) {
@@ -130,6 +181,9 @@ function normalizeReadChapter(value: unknown): ReadChapter | null {
   return {
     comicSlug,
     chapterSlug,
+    title: typeof item.title === "string" ? item.title : undefined,
+    comicTitle: typeof item.comicTitle === "string" ? item.comicTitle : undefined,
+    cover: typeof item.cover === "string" ? item.cover : undefined,
     readAt: Number(item.readAt) || 0,
   };
 }

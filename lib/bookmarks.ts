@@ -15,11 +15,12 @@ const BOOKMARK_KEY = "faruscan_bookmarks";
 const BOOKMARK_EVENT = "faruscan_bookmarks_changed";
 
 export function getBookmarks(): BookmarkComic[] {
-  if (typeof window === "undefined") return [];
+  return parseBookmarksSnapshot(getBookmarksSnapshot());
+}
 
+export function parseBookmarksSnapshot(snapshot: string): BookmarkComic[] {
   try {
-    const raw = window.localStorage.getItem(BOOKMARK_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
+    const parsed = snapshot ? JSON.parse(snapshot) : [];
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isBookmarkComic);
   } catch {

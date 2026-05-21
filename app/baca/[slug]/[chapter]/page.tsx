@@ -79,10 +79,19 @@ export default async function ReaderPage({
       ];
   const prevChapter = navChapter(data.navigation?.prevChapter);
   const nextChapter = navChapter(data.navigation?.nextChapter);
+  const comicTitle = textFallback(data.mangaInfo?.title || detailResult.data?.title, detailSlug);
+  const chapterTitle = textFallback(data.title, `Chapter ${chapter}`);
+  const cover = detailResult.data?.thumbnail;
 
   return (
     <div className="bg-zinc-50 dark:bg-zinc-950">
-      <ReadChapterMarker slug={slug} chapter={chapter} />
+      <ReadChapterMarker
+        slug={detailSlug}
+        chapter={chapter}
+        title={chapterTitle}
+        comicTitle={comicTitle}
+        cover={cover}
+      />
       <ReaderScrollButtons />
       <header className="border-b border-zinc-200 bg-white dark:border-white/10 dark:bg-zinc-950">
         <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
@@ -96,11 +105,11 @@ export default async function ReaderPage({
             </Link>
             <div className="min-w-0 sm:text-right">
               <h1 className="line-clamp-2 text-base font-bold text-zinc-950 dark:text-white sm:text-xl">
-                {textFallback(data.title, `Chapter ${chapter}`)}
+                {chapterTitle}
               </h1>
               <p className="mt-1 flex items-center gap-2 text-xs text-zinc-500 sm:justify-end sm:text-sm">
                 <Images className="size-4" aria-hidden="true" />
-                {textFallback(data.mangaInfo?.title, detailSlug)} - {pageCount} halaman
+                {comicTitle} - {pageCount} halaman
               </p>
             </div>
           </div>

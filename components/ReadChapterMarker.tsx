@@ -6,13 +6,25 @@ import { markChapterAsRead } from "@/lib/reading-history";
 export default function ReadChapterMarker({
   slug,
   chapter,
+  title,
+  comicTitle,
+  cover,
 }: {
   slug: string;
   chapter: string;
+  title?: string;
+  comicTitle?: string;
+  cover?: string;
 }) {
   useEffect(() => {
-    markChapterAsRead(slug, chapter);
-  }, [slug, chapter]);
+    markChapterAsRead({
+      comicSlug: slug,
+      chapterSlug: chapter,
+      title,
+      comicTitle,
+      cover,
+    });
+  }, [chapter, comicTitle, cover, slug, title]);
 
   return null;
 }

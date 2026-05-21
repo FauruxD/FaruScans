@@ -6,19 +6,19 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import EmptyState from "@/components/EmptyState";
 import {
-  getBookmarks,
   getBookmarksSnapshot,
+  parseBookmarksSnapshot,
   removeBookmark,
   subscribeBookmarks,
 } from "@/lib/bookmarks";
 
 export default function BookmarksPage() {
-  useSyncExternalStore(
+  const bookmarksSnapshot = useSyncExternalStore(
     subscribeBookmarks,
     getBookmarksSnapshot,
     () => "[]"
   );
-  const bookmarks = getBookmarks();
+  const bookmarks = parseBookmarksSnapshot(bookmarksSnapshot);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

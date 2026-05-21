@@ -28,16 +28,16 @@ const navItems = [
     isActive: (pathname: string) => pathname.startsWith("/pustaka"),
   },
   {
-    href: "/#popular",
+    href: "/popular",
     label: "Popular",
     icon: Flame,
-    isActive: () => false,
+    isActive: (pathname: string) => pathname.startsWith("/popular"),
   },
   {
-    href: "/pustaka",
+    href: "/library",
     label: "Library",
     icon: Library,
-    isActive: () => false,
+    isActive: (pathname: string) => pathname.startsWith("/library"),
   },
   {
     href: "/bookmarks",
