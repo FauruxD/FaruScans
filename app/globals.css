@@ -55,13 +55,8 @@ html {
 
 body {
   @apply bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-white;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 45%, #ffffff 100%);
   color: var(--foreground);
   font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
-}
-
-.dark body {
-  background: linear-gradient(180deg, #09090b 0%, #111113 45%, #09090b 100%);
 }
 
 .glass {
@@ -109,6 +104,46 @@ body {
   background: linear-gradient(90deg, #e4e4e7 25%, #f4f4f5 50%, #e4e4e7 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.starfield {
+  background-image:
+    radial-gradient(circle, rgba(0, 0, 0, 0.28) 3px, transparent 3px),
+    radial-gradient(circle, rgba(0, 0, 0, 0.18) 3px, transparent 3px);
+  background-position:
+    0 0,
+    40px 60px;
+  background-size:
+    80px 80px,
+    140px 140px;
+  animation: starfield-drift 80s linear infinite;
+}
+
+.dark .starfield {
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.38) 3px, transparent 3px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.22) 3px, transparent 3px);
+}
+
+.starfield-large {
+  opacity: 0.55;
+  background-size:
+    160px 160px,
+    260px 260px;
+  animation-duration: 120s;
+}
+
+.starfield-small {
+  opacity: 0.8;
+}
+
+@keyframes starfield-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-120px, 180px, 0);
+  }
 }
 
 .dark .skeleton-shimmer {
