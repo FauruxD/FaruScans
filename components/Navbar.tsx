@@ -1,6 +1,13 @@
 "use client";
 
-import { Compass, Flame, Home, Library, Search } from "lucide-react";
+import {
+  Bookmark as BookmarkIcon,
+  Compass,
+  Flame,
+  Home,
+  Library,
+  Search,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -31,6 +38,12 @@ const navItems = [
     label: "Library",
     icon: Library,
     isActive: () => false,
+  },
+  {
+    href: "/bookmarks",
+    label: "Bookmark",
+    icon: BookmarkIcon,
+    isActive: (pathname: string) => pathname.startsWith("/bookmarks"),
   },
 ];
 

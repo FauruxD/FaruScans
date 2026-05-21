@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { BookOpen, ChevronRight, History } from "lucide-react";
+import { BookOpen, History } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import BookmarkButton from "@/components/BookmarkButton";
 import ChapterList from "@/components/ChapterList";
+import ComicReadingHistory from "@/components/ComicReadingHistory";
 import ComicGrid from "@/components/ComicGrid";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
 import SectionHeader from "@/components/SectionHeader";
+import StarfieldBackground from "@/components/StarfieldBackground";
 import { fetchComicDetail } from "@/lib/api";
 import {
   extractChapterFromApiLink,
@@ -65,16 +68,21 @@ export default async function ComicDetailPage({
     validChapter(comic.latestChapter) || sortedChapters[sortedChapters.length - 1] || chapters[0];
   const firstNumber = chapterNumber(firstChapter);
   const latestNumber = chapterNumber(latestChapter);
+  const comicTitle = textFallback(comic.title, slug.replaceAll("-", " "));
+  const comicGenre = toArray(comic.genres).join(", ");
+  const comicType = comic.info?.["Jenis Komik"] || "";
   const similar = toArray(comic.similarKomik)
     .map(normalizeComicItem)
     .filter((item) => item.slug);
   const infoEntries = Object.entries(comic.info || {}).filter(([, value]) => value);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <ErrorMessage message={result.error} />
+    <div className="relative">
+      <StarfieldBackground />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <ErrorMessage message={result.error} />
 
-      <section className="mt-4 grid gap-6 lg:grid-cols-[300px_1fr]">
+      <section className="mt-4 grid gap-6 rounded-xl border border-zinc-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-900/70 sm:p-5 lg:grid-cols-[300px_1fr]">
         <div className="mx-auto w-full max-w-xs lg:max-w-none">
           <div className="relative aspect-[3/4.2] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-white/10 dark:bg-zinc-900">
             {comic.thumbnail ? (
@@ -103,7 +111,7 @@ export default async function ComicDetailPage({
               ))}
             </div>
             <h1 className="text-3xl font-black tracking-tight text-zinc-950 dark:text-white sm:text-5xl">
-              {textFallback(comic.title, slug.replaceAll("-", " "))}
+              {comicTitle}
             </h1>
             {comic.alternativeTitle ? (
               <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{comic.alternativeTitle}</p>
@@ -133,6 +141,23 @@ export default async function ComicDetailPage({
                 Baca chapter terbaru
               </Link>
             ) : null}
+            <BookmarkButton
+              comic={{
+                slug,
+                title: comicTitle,
+                cover: comic.thumbnail,
+                type: comicType,
+                genre: comicGenre,
+                latestChapter: latestNumber
+                  ? {
+                      title: latestChapter?.title || `Chapter ${latestNumber}`,
+                      chapterSlug: latestNumber,
+                    }
+                  : undefined,
+                updatedAt: latestChapter?.date,
+              }}
+              variant="button"
+            />
           </div>
 
           {infoEntries.length ? (
@@ -154,24 +179,7 @@ export default async function ComicDetailPage({
         ) : (
           <EmptyState title="Chapter belum tersedia" />
         )}
-        <aside className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60">
-          <h2 className="mb-3 font-bold text-zinc-950 dark:text-white">Ringkasan</h2>
-          <div className="space-y-3 text-sm text-zinc-600 dark:text-zinc-400">
-            <p className="flex items-center justify-between gap-4">
-              <span>Total chapter</span>
-              <span className="font-bold text-zinc-900 dark:text-zinc-100">{chapters.length}</span>
-            </p>
-            {latestNumber ? (
-              <Link
-                href={`/baca/${slug}/${latestNumber}`}
-                className="flex items-center justify-between rounded-lg bg-zinc-100 p-3 font-semibold text-zinc-900 transition hover:bg-zinc-200 dark:bg-white/5 dark:text-zinc-100 dark:hover:bg-white/10"
-              >
-                Lanjut ke chapter {latestNumber}
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </Link>
-            ) : null}
-          </div>
-        </aside>
+        <ComicReadingHistory slug={slug} chapters={chapters} />
       </section>
 
       <section className="mt-10">
@@ -182,6 +190,7 @@ export default async function ComicDetailPage({
           <EmptyState title="Komik serupa belum tersedia" />
         )}
       </section>
+      </div>
     </div>
   );
 }
