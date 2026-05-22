@@ -59,7 +59,8 @@ export default async function PustakaPage({
     .filter((comic) => matchesComicSearch(comic, searchParam))
     .filter((comic) => matchesComicType(comic, type))
     .filter((comic) => matchesComicGenre(comic, genre));
-  const filteredComics = sortComics(comics, sort).slice(0, 25);
+  // Batasi jumlah card yang dirender di satu halaman pustaka.
+  const filteredComics = sortComics(comics, sort).slice(0, 30);
   const genres = genreResult.data
     .map((item) => ({
       title: item.title || item.titleAttr || item.slug || "Genre",

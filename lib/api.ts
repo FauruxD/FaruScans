@@ -121,12 +121,15 @@ export async function fetchLibraryComics(page = 1) {
   const normalizedPage = Math.max(1, Number(page) || 1);
   return safeApi<PustakaResponse>(
     async () => {
-      const pageSize = 25;
+      // Jumlah komik yang dikumpulkan untuk satu halaman /pustaka.
+      const pageSize = 30;
+      // API pustaka biasanya hanya mengirim sekitar 10 komik per request.
       const apiPageSize = 10;
       const startIndex = (normalizedPage - 1) * pageSize;
       const apiStartPage = Math.floor(startIndex / apiPageSize) + 1;
       const offset = startIndex % apiPageSize;
       const fetchPageCount = Math.ceil((offset + pageSize + 1) / apiPageSize);
+      // Ambil beberapa halaman API agar jumlah item frontend bisa lebih banyak.
       const sourcePages = Array.from(
         { length: fetchPageCount },
         (_, index) => apiStartPage + index
@@ -157,6 +160,7 @@ export async function fetchLibraryComics(page = 1) {
 
       const results = dedupeLibraryItems(fulfilled.flatMap((item) => item.results || []));
       const lastSourceCount = fulfilled[fulfilled.length - 1]?.results?.length || 0;
+      // Potong hasil gabungan sesuai halaman frontend yang sedang dibuka.
       const pageResults = results.slice(offset, offset + pageSize);
 
       return {
