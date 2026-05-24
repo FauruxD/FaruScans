@@ -36,6 +36,19 @@ export type Reaction = {
   created_at: string | null;
 };
 
+export type Bookmark = {
+  id: string;
+  user_id: string;
+  comic_slug: string;
+  title: string;
+  cover: string | null;
+  type: string | null;
+  genre: string | null;
+  latest_chapter_title: string | null;
+  latest_chapter_slug: string | null;
+  created_at: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -82,6 +95,30 @@ export type Database = {
         };
         Update: {
           reaction_type?: ReactionType;
+        };
+        Relationships: [];
+      };
+      bookmarks: {
+        Row: Bookmark;
+        Insert: {
+          id?: string;
+          user_id: string;
+          comic_slug: string;
+          title: string;
+          cover?: string | null;
+          type?: string | null;
+          genre?: string | null;
+          latest_chapter_title?: string | null;
+          latest_chapter_slug?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          title?: string;
+          cover?: string | null;
+          type?: string | null;
+          genre?: string | null;
+          latest_chapter_title?: string | null;
+          latest_chapter_slug?: string | null;
         };
         Relationships: [];
       };

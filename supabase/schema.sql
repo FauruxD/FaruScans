@@ -27,6 +27,20 @@ create table if not exists public.reactions (
   created_at timestamptz default now()
 );
 
+create table if not exists public.bookmarks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  comic_slug text not null,
+  title text not null,
+  cover text,
+  type text,
+  genre text,
+  latest_chapter_title text,
+  latest_chapter_slug text,
+  created_at timestamptz default now(),
+  unique (user_id, comic_slug)
+);
+
 alter table public.comments
 add column if not exists chapter_slug text;
 
@@ -55,6 +69,7 @@ on public.reactions (
 alter table public.profiles enable row level security;
 alter table public.comments enable row level security;
 alter table public.reactions enable row level security;
+alter table public.bookmarks enable row level security;
 
 create policy "Profiles are viewable by everyone"
 on public.profiles for select
@@ -98,4 +113,20 @@ using (auth.uid() = user_id);
 
 create policy "Users can delete own reactions"
 on public.reactions for delete
+using (auth.uid() = user_id);
+
+create policy "Users can view own bookmarks"
+on public.bookmarks for select
+using (auth.uid() = user_id);
+
+create policy "Users can create own bookmarks"
+on public.bookmarks for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update own bookmarks"
+on public.bookmarks for update
+using (auth.uid() = user_id);
+
+create policy "Users can delete own bookmarks"
+on public.bookmarks for delete
 using (auth.uid() = user_id);

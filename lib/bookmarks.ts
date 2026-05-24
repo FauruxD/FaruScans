@@ -1,3 +1,6 @@
+import { supabase } from "@/lib/supabase/client";
+import type { Bookmark } from "@/types/supabase";
+
 export type BookmarkComic = {
   slug: string;
   title: string;
@@ -11,97 +14,113 @@ export type BookmarkComic = {
   updatedAt?: string;
 };
 
-const BOOKMARK_KEY = "faruscan_bookmarks";
 const BOOKMARK_EVENT = "faruscan_bookmarks_changed";
 
-export function getBookmarks(): BookmarkComic[] {
-  return parseBookmarksSnapshot(getBookmarksSnapshot());
+export async function getBookmarks(userId: string): Promise<BookmarkComic[]> {
+  if (!supabase || !userId) return [];
+
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return (data || []).map(mapBookmarkRow);
 }
 
-export function parseBookmarksSnapshot(snapshot: string): BookmarkComic[] {
-  try {
-    const parsed = snapshot ? JSON.parse(snapshot) : [];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isBookmarkComic);
-  } catch {
-    return [];
-  }
+export async function isBookmarked(userId: string, slug: string) {
+  if (!supabase || !userId || !slug) return false;
+
+  const { data, error } = await supabase
+    .from("bookmarks")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("comic_slug", slug)
+    .maybeSingle();
+
+  if (error) throw error;
+  return Boolean(data);
 }
 
-export function getBookmarksSnapshot() {
-  if (typeof window === "undefined") return "[]";
-  return window.localStorage.getItem(BOOKMARK_KEY) || "[]";
+export async function addBookmark(userId: string, comic: BookmarkComic) {
+  if (!supabase || !userId || !comic.slug) return;
+
+  const payload = toBookmarkPayload(userId, comic);
+  const { error } = await supabase
+    .from("bookmarks")
+    .upsert(payload, { onConflict: "user_id,comic_slug" });
+
+  if (error) throw error;
+  notifyBookmarksChanged();
 }
 
-export function isBookmarked(slug: string) {
-  const normalizedSlug = slug.trim();
-  if (!normalizedSlug) return false;
-  return getBookmarks().some((item) => item.slug === normalizedSlug);
+export async function removeBookmark(userId: string, slug: string) {
+  if (!supabase || !userId || !slug) return;
+
+  const { error } = await supabase
+    .from("bookmarks")
+    .delete()
+    .eq("user_id", userId)
+    .eq("comic_slug", slug);
+
+  if (error) throw error;
+  notifyBookmarksChanged();
 }
 
-export function addBookmark(comic: BookmarkComic) {
-  if (typeof window === "undefined" || !comic.slug) return;
+export async function toggleBookmark(userId: string, comic: BookmarkComic) {
+  const saved = await isBookmarked(userId, comic.slug);
 
-  const bookmarks = getBookmarks();
-  const next = [
-    sanitizeBookmark(comic),
-    ...bookmarks.filter((item) => item.slug !== comic.slug),
-  ];
-  saveBookmarks(next);
-}
-
-export function removeBookmark(slug: string) {
-  if (typeof window === "undefined") return;
-
-  const next = getBookmarks().filter((item) => item.slug !== slug);
-  saveBookmarks(next);
-}
-
-export function toggleBookmark(comic: BookmarkComic) {
-  if (isBookmarked(comic.slug)) {
-    removeBookmark(comic.slug);
+  if (saved) {
+    await removeBookmark(userId, comic.slug);
     return false;
   }
 
-  addBookmark(comic);
+  await addBookmark(userId, comic);
   return true;
 }
 
 export function subscribeBookmarks(callback: () => void) {
   if (typeof window === "undefined") return () => {};
 
-  function onStorage(event: StorageEvent) {
-    if (event.key === BOOKMARK_KEY) callback();
-  }
-
-  window.addEventListener("storage", onStorage);
   window.addEventListener(BOOKMARK_EVENT, callback);
 
   return () => {
-    window.removeEventListener("storage", onStorage);
     window.removeEventListener(BOOKMARK_EVENT, callback);
   };
 }
 
-function saveBookmarks(bookmarks: BookmarkComic[]) {
-  window.localStorage.setItem(BOOKMARK_KEY, JSON.stringify(bookmarks));
+function notifyBookmarksChanged() {
+  if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(BOOKMARK_EVENT));
 }
 
-function sanitizeBookmark(comic: BookmarkComic): BookmarkComic {
+function mapBookmarkRow(row: Bookmark): BookmarkComic {
   return {
-    slug: comic.slug,
-    title: comic.title || comic.slug,
-    cover: comic.cover,
-    type: comic.type,
-    genre: comic.genre,
-    latestChapter: comic.latestChapter,
-    updatedAt: comic.updatedAt,
+    slug: row.comic_slug,
+    title: row.title,
+    cover: row.cover || undefined,
+    type: row.type || undefined,
+    genre: row.genre || undefined,
+    latestChapter: row.latest_chapter_slug
+      ? {
+          title: row.latest_chapter_title || `Chapter ${row.latest_chapter_slug}`,
+          chapterSlug: row.latest_chapter_slug,
+        }
+      : undefined,
   };
 }
 
-function isBookmarkComic(value: unknown): value is BookmarkComic {
-  if (!value || typeof value !== "object") return false;
-  const item = value as BookmarkComic;
-  return typeof item.slug === "string" && typeof item.title === "string";
+function toBookmarkPayload(userId: string, comic: BookmarkComic) {
+  return {
+    user_id: userId,
+    comic_slug: comic.slug,
+    title: comic.title || comic.slug,
+    cover: comic.cover || null,
+    type: comic.type || null,
+    genre: comic.genre || null,
+    latest_chapter_title: comic.latestChapter?.title || null,
+    latest_chapter_slug: comic.latestChapter?.chapterSlug || null,
+  };
 }
