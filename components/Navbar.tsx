@@ -6,12 +6,18 @@ import {
   Flame,
   Home,
   Library,
+  LogIn,
+  LogOut,
   Search,
+  UserCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import ConfirmModal from "./ConfirmModal";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -49,10 +55,32 @@ const navItems = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, profile, loading, signOut } = useAuth();
+  const [logoutOpen, setLogoutOpen] = useState(false);
   const isReaderPage = pathname.startsWith("/baca/");
+  const displayName =
+    profile?.display_name || profile?.username || user?.email?.split("@")[0] || "User";
+
+  async function confirmLogout() {
+    await signOut();
+    setLogoutOpen(false);
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <>
+      <ConfirmModal
+        open={logoutOpen}
+        title="Keluar dari akun?"
+        description="Kamu akan keluar dari FaruScan."
+        cancelText="Batal"
+        confirmText="Logout"
+        confirmVariant="danger"
+        onCancel={() => setLogoutOpen(false)}
+        onConfirm={confirmLogout}
+      />
       <header
         className={cn(
           "border-b border-zinc-200 bg-white/95 backdrop-blur-xl dark:border-cyan-500/10 dark:bg-slate-950/95",
@@ -111,6 +139,49 @@ export default function Navbar() {
               <Search className="size-5" aria-hidden="true" />
             </Link>
             <ThemeToggle />
+            {!loading && user ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setLogoutOpen(true)}
+                  className="flex size-11 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200 dark:border-cyan-500/10 dark:bg-slate-900 dark:text-zinc-300 dark:hover:bg-slate-800 sm:hidden"
+                  aria-label="Logout"
+                >
+                  <LogOut className="size-5" aria-hidden="true" />
+                </button>
+                <div className="hidden items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-100 px-2 py-1.5 text-zinc-800 dark:border-cyan-500/10 dark:bg-slate-900 dark:text-zinc-200 sm:flex">
+                  <UserCircle className="size-5 text-cyan-500" aria-hidden="true" />
+                  <span className="max-w-24 truncate text-xs font-bold">
+                    {displayName}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLogoutOpen(true)}
+                    className="flex size-8 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-200 hover:text-zinc-950 dark:hover:bg-white/10 dark:hover:text-white"
+                    aria-label="Logout"
+                  >
+                    <LogOut className="size-4" aria-hidden="true" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  aria-label="Login"
+                  className="flex size-11 items-center justify-center rounded-xl bg-cyan-400 text-zinc-950 transition hover:bg-cyan-300 sm:hidden"
+                >
+                  <LogIn className="size-5" aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="hidden h-11 items-center gap-2 rounded-xl bg-cyan-400 px-4 text-sm font-bold text-zinc-950 transition hover:bg-cyan-300 sm:flex"
+                >
+                  <LogIn className="size-4" aria-hidden="true" />
+                  Login
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>

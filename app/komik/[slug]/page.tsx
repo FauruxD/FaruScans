@@ -4,10 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import BookmarkButton from "@/components/BookmarkButton";
 import ChapterList from "@/components/ChapterList";
+import CommentSection from "@/components/comments/CommentSection";
 import ComicReadingHistory from "@/components/ComicReadingHistory";
 import ComicGrid from "@/components/ComicGrid";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
+import ReactionBar from "@/components/reactions/ReactionBar";
 import SectionHeader from "@/components/SectionHeader";
 import StarfieldBackground from "@/components/StarfieldBackground";
 import { fetchComicDetail } from "@/lib/api";
@@ -160,6 +162,8 @@ export default async function ComicDetailPage({
             />
           </div>
 
+          <ReactionBar targetType="comic" comicSlug={slug} />
+
           {infoEntries.length ? (
             <div className="grid gap-2 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 sm:grid-cols-2">
               {infoEntries.map(([key, value]) => (
@@ -189,6 +193,10 @@ export default async function ComicDetailPage({
         ) : (
           <EmptyState title="Komik serupa belum tersedia" />
         )}
+      </section>
+
+      <section className="mt-10">
+        <CommentSection targetType="comic" comicSlug={slug} />
       </section>
       </div>
     </div>

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { ArrowLeft, Images } from "lucide-react";
 import Link from "next/link";
+import CommentSection from "@/components/comments/CommentSection";
 import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
 import ReadChapterMarker from "@/components/ReadChapterMarker";
 import ReaderControls from "@/components/ReaderControls";
 import ReaderImage from "@/components/ReaderImage";
 import ReaderScrollButtons from "@/components/ReaderScrollButtons";
+import ReactionBar from "@/components/reactions/ReactionBar";
 import { fetchChapterDetail, fetchComicDetail } from "@/lib/api";
 import {
   chapterSortValue,
@@ -169,6 +171,18 @@ export default async function ReaderPage({
           nextChapter={nextChapter}
           detailHref={detailHref}
         />
+        <section className="mx-auto mt-8 w-full max-w-4xl space-y-6">
+          <ReactionBar
+            targetType="chapter"
+            comicSlug={detailSlug}
+            chapterSlug={chapter}
+          />
+          <CommentSection
+            targetType="chapter"
+            comicSlug={detailSlug}
+            chapterSlug={chapter}
+          />
+        </section>
       </footer>
     </div>
   );
