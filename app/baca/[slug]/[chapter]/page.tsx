@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import { ArrowLeft, Images } from "lucide-react";
 import Link from "next/link";
-import CommentSection from "@/components/comments/CommentSection";
-import EmptyState from "@/components/EmptyState";
 import ErrorMessage from "@/components/ErrorMessage";
+import InfiniteChapterReader from "@/components/InfiniteChapterReader";
 import ReadChapterMarker from "@/components/ReadChapterMarker";
 import ReaderControls from "@/components/ReaderControls";
-import ReaderImage from "@/components/ReaderImage";
 import ReaderScrollButtons from "@/components/ReaderScrollButtons";
-import ReactionBar from "@/components/reactions/ReactionBar";
 import { fetchChapterDetail, fetchComicDetail } from "@/lib/api";
 import {
   chapterSortValue,
@@ -144,46 +141,16 @@ export default async function ReaderPage({
       <main className="mx-auto max-w-5xl px-0 py-4 sm:px-4">
         <ErrorMessage message={result.error} />
         <ErrorMessage message={detailResult.error} />
-        {images.length ? (
-          <div className="space-y-1">
-            {images.map((image, index) => (
-              <ReaderImage
-                key={`${image.src}-${index}`}
-                src={image.src || ""}
-                alt={image.alt}
-                index={index}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="px-4">
-            <EmptyState title="Gambar chapter kosong" />
-          </div>
-        )}
-      </main>
-
-      <footer className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <ReaderControls
-          slug={detailSlug}
-          currentChapter={chapter}
+        <InfiniteChapterReader
+          comicSlug={detailSlug}
+          initialChapter={chapter}
+          initialReaderData={data}
           chapters={controlChapters}
-          prevChapter={prevChapter}
-          nextChapter={nextChapter}
           detailHref={detailHref}
+          comicTitle={comicTitle}
+          cover={cover}
         />
-        <section className="mx-auto mt-8 w-full max-w-4xl space-y-6">
-          <ReactionBar
-            targetType="chapter"
-            comicSlug={detailSlug}
-            chapterSlug={chapter}
-          />
-          <CommentSection
-            targetType="chapter"
-            comicSlug={detailSlug}
-            chapterSlug={chapter}
-          />
-        </section>
-      </footer>
+      </main>
     </div>
   );
 }
