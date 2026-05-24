@@ -20,54 +20,57 @@ export default function RegisterPage() {
     event.preventDefault();
     setError("");
     setSuccessOpen(false);
+    setLoading(true);
 
-    if (!supabase) {
-      setError("Supabase belum dikonfigurasi.");
-      setLoading(false);
-      return;
-    }
-
+    const timeout = createAuthTimeout();
     try {
-      setLoading(true);
-      const cleanedUsername = username.trim().toLowerCase();
-      const name = displayName.trim() || cleanedUsername || email.split("@")[0];
-      const { data, error: registerError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username: cleanedUsername,
+      if (!supabase) throw new Error("Supabase belum dikonfigurasi.");
+
+      await Promise.race([
+        (async () => {
+          const cleanedUsername = username.trim().toLowerCase();
+          const name = displayName.trim() || cleanedUsername || email.split("@")[0];
+          const { data, error: registerError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                username: cleanedUsername,
+                display_name: name,
+              },
+            },
+          });
+
+          if (registerError) throw registerError;
+          if (!data.user) throw new Error("User tidak ditemukan setelah register.");
+
+          if (process.env.NODE_ENV === "development") {
+            console.log("signup data", data);
+          }
+
+          const { error: profileError } = await supabase.from("profiles").upsert({
+            id: data.user.id,
+            username: cleanedUsername || null,
             display_name: name,
-          },
-        },
-      });
+            avatar_url: null,
+          });
 
-      if (registerError) throw registerError;
+          if (process.env.NODE_ENV === "development") {
+            console.log("profile error", profileError);
+          }
 
-      if (process.env.NODE_ENV === "development") {
-        console.log("signup data", data);
-      }
+          if (profileError) throw profileError;
 
-      if (data.user) {
-        const { error: profileError } = await supabase.from("profiles").upsert({
-          id: data.user.id,
-          username: cleanedUsername || null,
-          display_name: name,
-          avatar_url: null,
-        });
+          await supabase.auth.signOut();
+        })(),
+        timeout,
+      ]);
 
-        if (process.env.NODE_ENV === "development") {
-          console.log("profile error", profileError);
-        }
-
-        if (profileError) throw profileError;
-      }
-
-      await supabase.auth.signOut();
+      setSuccessOpen(true);
       setLoading(false);
       router.refresh();
-      setSuccessOpen(true);
     } catch (registerError) {
+      console.error("Register error:", registerError);
       setError(
         registerError instanceof Error ? registerError.message : "Registrasi gagal."
       );
@@ -166,4 +169,12 @@ export default function RegisterPage() {
     </div>
     </>
   );
+}
+
+function createAuthTimeout() {
+  return new Promise<never>((_, reject) => {
+    window.setTimeout(() => {
+      reject(new Error("Request timeout. Coba lagi."));
+    }, 15_000);
+  });
 }

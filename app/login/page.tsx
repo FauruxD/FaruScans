@@ -17,24 +17,29 @@ export default function LoginPage() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setLoading(true);
 
-    if (!supabase) {
-      setError("Supabase belum dikonfigurasi.");
-      return;
-    }
-
+    const timeout = createAuthTimeout();
     try {
-      setLoading(true);
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (!supabase) throw new Error("Supabase belum dikonfigurasi.");
 
-      if (loginError) throw loginError;
+      await Promise.race([
+        (async () => {
+          const { error: loginError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
+          if (loginError) throw loginError;
+        })(),
+        timeout,
+      ]);
+
+      setLoading(false);
       router.push(redirectTo);
       router.refresh();
     } catch (loginError) {
+      console.error("Login error:", loginError);
       setError(loginError instanceof Error ? loginError.message : "Login gagal.");
     } finally {
       setLoading(false);
@@ -96,4 +101,12 @@ export default function LoginPage() {
       </section>
     </div>
   );
+}
+
+function createAuthTimeout() {
+  return new Promise<never>((_, reject) => {
+    window.setTimeout(() => {
+      reject(new Error("Request timeout. Coba lagi."));
+    }, 15_000);
+  });
 }
