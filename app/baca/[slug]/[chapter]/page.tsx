@@ -9,8 +9,10 @@ import ReaderImage from "@/components/ReaderImage";
 import ReaderScrollButtons from "@/components/ReaderScrollButtons";
 import { fetchChapterDetail, fetchComicDetail } from "@/lib/api";
 import {
-  extractChapterFromApiLink,
+  chapterSortValue,
   extractSlugFromDetailLink,
+  getChapterSegment,
+  getReaderNavigation,
   normalizeReaderChapters,
   safeSegment,
   textFallback,
@@ -29,10 +31,7 @@ export async function generateMetadata({
 function navChapter(
   item: { apiLink?: string | null; chapter?: string; chapterNumber?: string } | null | undefined,
 ) {
-  if (!item) return "";
-  const chapter =
-    item.chapter || item.chapterNumber || extractChapterFromApiLink(item.apiLink);
-  return safeSegment(chapter);
+  return getChapterSegment(item);
 }
 
 export default async function ReaderPage({
@@ -67,7 +66,7 @@ export default async function ReaderPage({
   const chapters = normalizeReaderChapters(
     toArray(detailResult.data?.chapters),
     detailSlug
-  );
+  ).sort((a, b) => chapterSortValue(b.chapterSlug) - chapterSortValue(a.chapterSlug));
   const controlChapters = chapters.length
     ? chapters
     : [
@@ -77,8 +76,23 @@ export default async function ReaderPage({
           href: `/baca/${detailSlug}/${chapter}`,
         },
       ];
-  const prevChapter = navChapter(data.navigation?.prevChapter);
-  const nextChapter = navChapter(data.navigation?.nextChapter);
+  const apiPrevChapter = navChapter(data.navigation?.prevChapter);
+  const apiNextChapter = navChapter(data.navigation?.nextChapter);
+  const readerNavigation = chapters.length
+    ? getReaderNavigation(controlChapters, chapter)
+    : {
+        currentIndex: -1,
+        prevChapter: apiPrevChapter || null,
+        nextChapter: apiNextChapter || null,
+      };
+  const prevChapter =
+    readerNavigation.currentIndex === -1
+      ? apiPrevChapter
+      : readerNavigation.prevChapter || undefined;
+  const nextChapter =
+    readerNavigation.currentIndex === -1
+      ? apiNextChapter
+      : readerNavigation.nextChapter || undefined;
   const comicTitle = textFallback(data.mangaInfo?.title || detailResult.data?.title, detailSlug);
   const chapterTitle = textFallback(data.title, `Chapter ${chapter}`);
   const cover = detailResult.data?.thumbnail;

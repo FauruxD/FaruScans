@@ -12,7 +12,8 @@ import SectionHeader from "@/components/SectionHeader";
 import StarfieldBackground from "@/components/StarfieldBackground";
 import { fetchComicDetail } from "@/lib/api";
 import {
-  extractChapterFromApiLink,
+  chapterSortValue,
+  getChapterSegment,
   normalizeComicItem,
   safeSegment,
   textFallback,
@@ -30,12 +31,11 @@ export async function generateMetadata({
 }
 
 function chapterNumber(chapter?: ChapterItem | null) {
-  return chapter?.chapterNumber || extractChapterFromApiLink(chapter?.apiLink);
+  return getChapterSegment(chapter);
 }
 
 function sortChapterValue(chapter: ChapterItem) {
-  const value = parseFloat(chapterNumber(chapter) || "0");
-  return Number.isFinite(value) ? value : 0;
+  return chapterSortValue(chapterNumber(chapter));
 }
 
 function validChapter(chapter?: ChapterItem | null) {

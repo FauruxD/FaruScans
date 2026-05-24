@@ -37,15 +37,15 @@ export function extractChapterFromApiLink(link?: string | null): string {
   const apiMatch = cleanLink.match(/\/baca-chapter\/[^/]+\/([^/?#]+)/);
   if (apiMatch?.[1]) return safeSegment(apiMatch[1]);
   const chapterMatch = cleanLink.match(/chapter-([\d.-]+)/i);
-  if (chapterMatch?.[1]) return safeSegment(chapterMatch[1]);
+  if (chapterMatch?.[1]) return safeSegment(chapterMatch[1].replaceAll("-", "."));
   const segments = cleanLink.split(/[/?#]/)[0]?.split("/").filter(Boolean) || [];
   return safeSegment(segments[segments.length - 1] || "");
 }
 
 export function extractChapterFromText(text?: string | null): string {
-  const match = String(text || "").match(/chapter\s*([\d]+(?:[.-][\d]+)?)/i);
+  const match = String(text || "").match(/chapter[\s-]*([\d]+(?:[.-][\d]+)?)/i);
   if (!match?.[1]) return "";
-  return safeSegment(match[1].replace(".", "-"));
+  return safeSegment(match[1].replaceAll("-", "."));
 }
 
 /**
@@ -57,7 +57,7 @@ export function extractSlugFromChapterLink(link?: string | null): string {
   const cleanLink = decodeURIComponent(String(link)).trim();
   const apiMatch = cleanLink.match(/\/baca-chapter\/([^/]+)/);
   if (apiMatch?.[1]) return safeSegment(apiMatch[1]);
-  const chapterMatch = cleanLink.match(/\/([^/?#]+)-chapter-[\d.]+/i);
+  const chapterMatch = cleanLink.match(/\/([^/?#]+)-chapter-[\d.-]+/i);
   if (chapterMatch?.[1]) return safeSegment(chapterMatch[1]);
   return "";
 }
@@ -67,6 +67,83 @@ export function safeSegment(value?: string | null): string {
     .replace(/^\/+|\/+$/g, "")
     .replace(/[^a-zA-Z0-9._-]/g, "")
     .slice(0, 160);
+}
+
+export function normalizeChapterSegment(value?: string | null): string {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  const chapterFromText = extractChapterFromText(raw);
+  if (/chapter/i.test(raw) && chapterFromText) return chapterFromText;
+  if (/^\d+(?:-\d+)+$/.test(raw)) return safeSegment(raw.replaceAll("-", "."));
+
+  return safeSegment(raw);
+}
+
+export function getChapterSegment(
+  chapter?: {
+    title?: string | null;
+    apiLink?: string | null;
+    href?: string | null;
+    link?: string | null;
+    slug?: string | null;
+    chapter?: string | null;
+    chapterNumber?: string | null;
+  } | null
+): string {
+  if (!chapter) return "";
+
+  return (
+    normalizeChapterSegment(chapter.chapterNumber) ||
+    normalizeChapterSegment(chapter.chapter) ||
+    extractChapterFromApiLink(chapter.apiLink) ||
+    extractChapterFromApiLink(chapter.link) ||
+    extractChapterFromApiLink(chapter.href) ||
+    normalizeChapterSegment(chapter.slug) ||
+    extractChapterFromText(chapter.title)
+  );
+}
+
+export function chapterSortValue(chapter?: string | null) {
+  const match = String(chapter || "").match(/\d+(?:[.-]\d+)?/);
+  if (!match?.[0]) return 0;
+
+  const value = parseFloat(match[0].replace("-", "."));
+  return Number.isFinite(value) ? value : 0;
+}
+
+export function getReaderNavigation(
+  chapters: ReaderControlChapter[],
+  currentChapter: string
+) {
+  const current = normalizeChapterSegment(currentChapter);
+  const currentIndex = chapters.findIndex(
+    (item) => normalizeChapterSegment(item.chapterSlug || item.title) === current
+  );
+
+  if (currentIndex === -1) {
+    return {
+      currentIndex,
+      prevChapter: null,
+      nextChapter: null,
+    };
+  }
+
+  const firstValue = chapterSortValue(chapters[0]?.chapterSlug);
+  const lastValue = chapterSortValue(chapters[chapters.length - 1]?.chapterSlug);
+  const isDescending = firstValue >= lastValue;
+  const nextItem = isDescending
+    ? chapters[currentIndex - 1]
+    : chapters[currentIndex + 1];
+  const prevItem = isDescending
+    ? chapters[currentIndex + 1]
+    : chapters[currentIndex - 1];
+
+  return {
+    currentIndex,
+    prevChapter: prevItem?.chapterSlug || null,
+    nextChapter: nextItem?.chapterSlug || null,
+  };
 }
 
 export function textFallback(value?: string | null, fallback = "Tidak tersedia"): string {
@@ -161,9 +238,7 @@ export function normalizeReaderChapters(
 
   return chapters
     .map((chapter, index) => {
-      const chapterSlug = safeSegment(
-        chapter.chapterNumber || extractChapterFromApiLink(chapter.apiLink)
-      );
+      const chapterSlug = getChapterSegment(chapter);
 
       if (!chapterSlug || seen.has(chapterSlug)) return null;
       seen.add(chapterSlug);
@@ -225,14 +300,18 @@ export function extractLatestChapter(item: any, comicSlug?: string) {
     extractChapterFromApiLink(apiLink) ||
     item?.chapterNumber ||
     item?.latestChapter?.chapterNumber ||
+    item?.latestChapter?.chapter ||
     extractChapterFromText(rawTitle);
   const slug = safeSegment(slugFromLink || comicSlug);
-  const chapterLabel = String(rawTitle || "").match(/chapter\s*[\d]+(?:[.-][\d]+)?/i)?.[0];
+  const chapterLabel = String(rawTitle || "").match(/chapter[\s-]*[\d]+(?:[.-][\d]+)?/i)?.[0];
+  const chapterSegment = normalizeChapterSegment(chapter);
 
   return {
-    title: String(chapterLabel || (chapter ? `Chapter ${chapter.replace("-", ".")}` : rawTitle)).trim(),
-    chapter: safeSegment(chapter),
-    href: slug && chapter ? `/baca/${slug}/${safeSegment(chapter)}` : "",
+    title: String(
+      chapterLabel || (chapterSegment ? `Chapter ${chapterSegment}` : rawTitle)
+    ).trim(),
+    chapter: chapterSegment,
+    href: slug && chapterSegment ? `/baca/${slug}/${chapterSegment}` : "",
   };
 }
 

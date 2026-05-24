@@ -160,6 +160,10 @@ export interface ChapterItem {
   title?: string;
   originalLink?: string;
   apiLink?: string;
+  href?: string;
+  link?: string;
+  slug?: string;
+  chapter?: string;
   views?: string;
   date?: string;
   chapterNumber?: string;

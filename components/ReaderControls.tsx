@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn, safeSegment } from "@/lib/utils";
 import type { ReaderControlChapter } from "@/types/comic";
 
@@ -27,18 +27,28 @@ export default function ReaderControls({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const normalizedSlug = safeSegment(slug);
   const normalizedCurrent = safeSegment(currentChapter);
-  const options = chapters.length
-    ? chapters
-    : [
-        {
-          title: `Chapter ${normalizedCurrent}`,
-          chapterSlug: normalizedCurrent,
-          href: `/baca/${normalizedSlug}/${normalizedCurrent}`,
-        },
-      ];
+  const options = useMemo(
+    () =>
+      chapters.length
+        ? chapters
+        : [
+            {
+              title: `Chapter ${normalizedCurrent}`,
+              chapterSlug: normalizedCurrent,
+              href: `/baca/${normalizedSlug}/${normalizedCurrent}`,
+            },
+          ],
+    [chapters, normalizedCurrent, normalizedSlug]
+  );
   const currentLabel =
     options.find((item) => item.chapterSlug === normalizedCurrent)?.title ||
     `Chapter ${normalizedCurrent}`;
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    console.log("Current chapter:", normalizedCurrent);
+    console.log("Available chapters:", options);
+  }, [normalizedCurrent, options]);
 
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {

@@ -8,7 +8,7 @@ import {
   type ReadChapter,
   subscribeReadChapters,
 } from "@/lib/reading-history";
-import { extractChapterFromApiLink, safeSegment } from "@/lib/utils";
+import { getChapterSegment, safeSegment } from "@/lib/utils";
 import type { ChapterItem } from "@/types/comic";
 
 export default function ComicReadingHistory({
@@ -34,9 +34,7 @@ export default function ComicReadingHistory({
     return new Map(
       chapters
         .map((chapter, index) => {
-          const chapterSlug = safeSegment(
-            chapter.chapterNumber || extractChapterFromApiLink(chapter.apiLink)
-          );
+          const chapterSlug = getChapterSegment(chapter);
 
           if (!chapterSlug) return null;
 
