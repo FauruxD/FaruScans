@@ -159,6 +159,7 @@ export default function InfiniteChapterReader({
                     src={image.src || ""}
                     alt={image.alt}
                     index={imageIndex}
+                    fallbackSrc={image.fallbackSrc}
                   />
                 ))}
               </div>
